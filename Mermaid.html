@@ -20,27 +20,24 @@
     <p class="note">Diagram dirender dengan Mermaid.js. Jika halaman belum berubah, pakai Ctrl+F5 atau tambah ?v=2 di URL.</p>
 
     <!-- 1) Gambaran Besar -->
-    <div class="card">
+    <div class="card" >
       <h2>1) Gambaran Besar</h2>
-      <pre class="mermaid">
-flowchart LR
-  classDef head fill:#ffcc00,stroke:#e6b800,stroke-width:2,color:#222;
-  classDef box  fill:#fff7cc,stroke:#ffd633,stroke-width:1.5,color:#3a2f00;
-  classDef dec  fill:#ffe680,stroke:#e6b800,stroke-width:2,color:#3a2f00;
-  classDef mute fill:#fffaf0,stroke:#ffd633,color:#7a6f3a,stroke-dasharray:3 3;
-
-  A([Halaman dibuka]):::head --> B[Ambil pageId dari URL param page]:::box
-  B --> C[Inisialisasi Firebase dan Firestore]:::box
-  C --> D{Load komentar berdasarkan pageId}:::dec
-  D --> |index siap| E[Tampilkan daftar komentar terbaru]:::box
-  D --> |butuh index| F[Fallback tanpa orderBy lalu urut lokal ts desc]:::box
-  E --> G[User isi form komentar]:::dec
+      <div style=" justify-content:center; margin:20px 0;">
+      <pre class="mermaid" >
+%%{ init: { "flowchart": { "useMaxWidth": false, "nodeSpacing": 50, "rankSpacing": 80 }}}%%
+flowchart TD
+  A[Halaman dibuka] --> B[Ambil pageId dari URL]
+  B --> C[Inisialisasi Firebase dan Firestore]
+  C --> D{Index tersedia?}
+  D -->|Ya| E[Tampilkan komentar terbaru]
+  D -->|Tidak| F[Fallback tanpa orderBy lalu urut lokal]
+  E --> G[User isi form komentar]
   F --> G
-  G --> |kirim| H[addDoc ke Firestore dengan pageId name text ts]:::box
-  H --> |sukses| I[Clear input dan muat ulang komentar]:::box
-  H --> |gagal|  J[Tampilkan notifikasi gagal]:::mute
-      </pre>
-    </div>
+  G --> H[addDoc ke Firestore]
+  H -->|Sukses| I[Clear input dan reload komentar]
+  H -->|Gagal| J[Tampilkan notifikasi gagal]
+</pre>
+    </div></div>
 
     <!-- 2) Alur Detail: Load Komentar -->
     <div class="card">
@@ -69,19 +66,15 @@ flowchart TD
       <h2>3) Alur Detail: Submit Komentar</h2>
       <pre class="mermaid">
 flowchart TD
-  classDef head fill:#ffcc00,stroke:#e6b800,stroke-width:2,color:#222;
-  classDef box  fill:#fff7cc,stroke:#ffd633,stroke-width:1.5,color:#3a2f00;
-  classDef dec  fill:#ffe680,stroke:#e6b800,stroke-width:2,color:#3a2f00;
-  classDef mute fill:#fffaf0,stroke:#ffd633,color:#7a6f3a,stroke-dasharray:3 3;
-
-  A([Submit form]):::head --> B[PreventDefault dan validasi name serta text]:::box
-  B --> C{Input valid}:::dec
-  C --> |tidak| D[Tampilkan pesan wajib diisi]:::mute
-  C --> |ya|    E[addDoc berisi pageId name text ts dan ref]:::box
-  E --> F{Sukses}:::dec
-  F --> |ya| G[Clear textarea dan tampilkan info terkirim]:::box
-  G --> H[Load komentar ulang]:::box
-  F --> |gagal| I[Tampilkan pesan gagal mengirim]:::mute
+  A([loadComments]) --> B[Query where pageId==X orderBy ts desc limit 50]
+  B --> C{Query berhasil}
+  C -- ya --> D[Render dokumen ke daftar]
+  C -- error index --> E[Query fallback where pageId==X limit 50]
+  E --> F[Urutkan lokal berdasarkan ts desc]
+  F --> D
+  D --> G{Ada data}
+  G -- ada --> H[Escape HTML lalu Linkify lalu tampilkan item]
+  G -- kosong --> I[Tampilkan teks belum ada komentar]
       </pre>
     </div>
   </div>
