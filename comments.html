@@ -60,25 +60,32 @@
 
   // --- Tentukan pageId otomatis ---
   function getPageId() {
-    try {
-      // 1) Fallback query string ?page=/path-halaman
-      const qs = new URLSearchParams(location.search).get('page');
-      if (qs) return qs.trim().toLowerCase();
+  try {
+    // 1) Query ?page=...
+    const qs = new URLSearchParams(location.search).get('page');
+    if (qs) return qs.trim().toLowerCase();
 
-      // 2) Utama: referrer dari Google Sites
-      const ref = document.referrer || "";
-      if (!ref) return "unknown";
+    // 2) Hash #page=...
+    const m = location.hash.match(/(?:^|[#&?])page=([^&]+)/i);
+    if (m && m[1]) return decodeURIComponent(m[1]).trim().toLowerCase();
+
+    // 3) Referrer dari Google Sites (kalau ada)
+    const ref = document.referrer || "";
+    if (ref) {
       const u = new URL(ref);
-      // path cukup stabil untuk identifier
       let id = u.pathname.toLowerCase();
-      // kalau Sites-nya pakai parameter page=, ikutkan biar unik
       const usp = new URLSearchParams(u.search);
       if (usp.has("page")) id += "::" + usp.get("page").toLowerCase();
       return id;
-    } catch {
-      return "unknown";
     }
+
+    // 4) Terakhir: pakai path lokal sendiri (buat debug/standalone)
+    return location.pathname.toLowerCase() || "unknown";
+  } catch {
+    return "unknown";
   }
+}
+
   const pageId = getPageId();
   document.getElementById('pageInfo').textContent = "ID Halaman: " + pageId;
 
