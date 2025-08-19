@@ -2,15 +2,25 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <title>Flowchart Komentar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flowchart Sistem Komentar</title>
+  <style>
+    :root{
+      --bg:#fffbea; --card:#fff7cc; --ink:#3a2f00;
+      --line:#ffd633; --muted:#7a6f3a;
+    }
+    body{background:var(--bg);color:var(--ink);font-family:system-ui,Arial,sans-serif;margin:0;padding:24px}
+    h1{color:#3a2f00;text-align:center}
+    pre.mermaid{
+      background:#fffef5;
+      border:2px dashed var(--line);
+      border-radius:12px;
+      padding:12px;
+    }
+  </style>
 </head>
-  <script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({ startOnLoad: true, theme: 'default' });
-</script>
-
 <body>
-  <h2>Flowchart Sistem Komentar</h2>
+  <h1>Flowchart Sistem Komentar</h1>
 
   <pre class="mermaid">
   flowchart TD
@@ -25,5 +35,10 @@
     H -->|Sukses| I[Clear input + reload komentar]
     H -->|Gagal| J[Tampilkan error]
   </pre>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
 </body>
 </html>
