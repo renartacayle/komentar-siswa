@@ -1,41 +1,113 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Flowchart Sistem Komentar</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flowchart Sistem Komentar (Mermaid)</title>
   <style>
     :root{
-      --bg:#fffbea; --card:#fff7cc; --ink:#3a2f00;
-      --line:#ffd633; --muted:#7a6f3a;
+      --bg:#fffbea; --card:#fff7cc; --ink:#3a2f00; --line:#ffd633; --muted:#7a6f3a;
     }
-    body{background:var(--bg);color:var(--ink);font-family:system-ui,Arial,sans-serif;margin:0;padding:24px}
-    h1{color:#3a2f00;text-align:center}
+    html,body{background:var(--bg);color:var(--ink);margin:0;font-family:system-ui,Arial,sans-serif}
+    .wrap{max-width:980px;margin:0 auto;padding:24px}
+    h1,h2{margin:0 0 12px}
+    .card{
+      background:var(--card);
+      border:2px dashed var(--line);
+      border-radius:14px;
+      padding:16px;
+      box-shadow:0 4px 8px rgba(0,0,0,.08);
+      margin-bottom:18px;
+    }
+    .note{color:var(--muted);font-size:13px;margin:8px 0 16px}
     pre.mermaid{
       background:#fffef5;
-      border:2px dashed var(--line);
+      border:1px solid var(--line);
       border-radius:12px;
       padding:12px;
+      overflow:auto;
     }
+    a{color:#7a5c00}
   </style>
 </head>
 <body>
-  <h1>Flowchart Sistem Komentar</h1>
+  <div class="wrap">
+    <h1>Flowchart Sistem Komentar</h1>
+    <p class="note">Diagram dirender dengan Mermaid.js. Simpan file ini sebagai <b>Mermaid.html</b> di repo GitHub Pages kamu.</p>
 
-  <pre class="mermaid">
-  flowchart TD
-    A([Halaman dimuat]) --> B[Ambil pageId dari URL ?page=]
-    B --> C[Init Firebase & Firestore]
-    C --> D{Load komentar by pageId}
-    D -->|Index siap| E[Tampilkan komentar terbaru]
-    D -->|Butuh index| F[Fallback query + sort lokal]
-    E --> G{{User isi form}}
-    F --> G
-    G -->|Kirim| H[addDoc ke Firestore]
-    H -->|Sukses| I[Clear input + reload komentar]
-    H -->|Gagal| J[Tampilkan error]
-  </pre>
+    <!-- 1) Gambaran besar -->
+    <div class="card">
+      <h2>1) Gambaran Besar</h2>
+      <pre class="mermaid">
+flowchart LR
+  classDef head fill:#ffcc00,stroke:#e6b800,stroke-width:2,color:#222;
+  classDef box fill:#fff7cc,stroke:#ffd633,stroke-width:1.5,color:#3a2f00;
+  classDef dec fill:#ffe680,stroke:#e6b800,stroke-width:2,color:#3a2f00;
+  classDef mute fill:#fffaf0,stroke:#ffd633,color:#7a6f3a,stroke-dasharray:3 3;
 
+  A([Halaman dibuka]):::head --> B[Ambil pageId dari URL ?page=...]:::box
+  B --> C[Init Firebase & Firestore]:::box
+  C --> D{Load komentar by pageId}:::dec
+  D --> |index siap| E[Tampilkan daftar komentar (terbaru)]:::box
+  D --> |butuh index| F[Fallback tanpa orderBy, urut lokal ts desc]:::box
+  E --> G{{User isi form}}:::dec
+  F --> G
+  G --> |Kirim| H[addDoc(pageId, name, text, ts)]:::box
+  H --> |sukses| I[Clear input + muat ulang komentar]:::box
+  H --> |gagal| J[Notifikasi gagal]:::mute
+      </pre>
+    </div>
+
+    <!-- 2) Alur detail: Load komentar -->
+    <div class="card">
+      <h2>2) Alur Detail: Load Komentar</h2>
+      <pre class="mermaid">
+flowchart TD
+  classDef head fill:#ffcc00,stroke:#e6b800,stroke-width:2,color:#222;
+  classDef box fill:#fff7cc,stroke:#ffd633,stroke-width:1.5,color:#3a2f00;
+  classDef dec fill:#ffe680,stroke:#e6b800,stroke-width:2,color:#3a2f00;
+  classDef mute fill:#fffaf0,stroke:#ffd633,color:#7a6f3a,stroke-dasharray:3 3;
+
+  A([loadComments()]):::head --> B[Query: where(pageId==X), orderBy(ts, desc), limit(50)]:::box
+  B --> C{Berhasil?}:::dec
+  C --> |ya| D[snapshot -> renderDocs()]:::box
+  C --> |error index| E[Query fallback: where(pageId==X), limit(50)]:::box
+  E --> F[Sort lokal by ts desc]:::box
+  F --> D
+  D --> G{Ada data?}:::dec
+  G --> |ada| H[Escape HTML -> Linkify -> Tampilkan item]:::box
+  G --> |kosong| I[Tampilkan "Belum ada komentar"]:::mute
+      </pre>
+    </div>
+
+    <!-- 3) Alur detail: Submit komentar -->
+    <div class="card">
+      <h2>3) Alur Detail: Submit Komentar</h2>
+      <pre class="mermaid">
+flowchart TD
+  classDef head fill:#ffcc00,stroke:#e6b800,stroke-width:2,color:#222;
+  classDef box fill:#fff7cc,stroke:#ffd633,stroke-width:1.5,color:#3a2f00;
+  classDef dec fill:#ffe680,stroke:#e6b800,stroke-width:2,color:#3a2f00;
+  classDef mute fill:#fffaf0,stroke:#ffd633,color:#7a6f3a,stroke-dasharray:3 3;
+
+  A([Submit form]):::head --> B[PreventDefault + Validasi name & text]:::box
+  B --> C{Valid?}:::dec
+  C --> |tidak| D[Tampilkan: "Nama & komentar wajib diisi"]:::mute
+  C --> |ya| E[addDoc({pageId, name, text, ts, ref})]:::box
+  E --> F{Sukses?}:::dec
+  F --> |ya| G[Clear textarea + info "Terkirim!"]:::box
+  G --> H[loadComments() ulang]:::box
+  F --> |gagal| I[Tampilkan: "Gagal mengirim. Coba lagi."]:::mute
+      </pre>
+    </div>
+
+    <p class="note">
+      Catatan: Jika ingin dipasang di Google Sites, biasanya skrip eksternal diblokir.
+      Untuk Sites, ekspor diagram jadi gambar (PNG/SVG) dari Mermaid Live Editor lalu upload sebagai gambar.
+    </p>
+  </div>
+
+  <!-- Mermaid.js -->
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
     mermaid.initialize({ startOnLoad: true, theme: 'default' });
