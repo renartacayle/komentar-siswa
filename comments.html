@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Komentar</title>
+<style>
+  :root { --bg:#ffffff; --card:#ffffff; --ink:#222; --muted:#666; --line:#e5e5e5; }
+  html,body { background:var(--bg); color:var(--ink); margin:0; }
+  .wrap { max-width:720px; margin:0 auto; padding:16px; font-family:system-ui,Arial,sans-serif; }
+  h3 { margin:0 0 12px; font-size:18px; }
+  form { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  input, textarea { width:100%; border:1px solid #ccc; border-radius:8px; padding:10px; font-size:14px; margin:8px 0; }
+  button { border:1px solid #222; background:#222; color:#fff; border-radius:8px; padding:10px 14px; font-size:14px; cursor:pointer; }
+  .meta { font-size:12px; color:var(--muted); margin-top:4px }
+  .list { margin-top:14px }
+  .item { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; box-shadow:0 2px 6px rgba(0,0,0,.04); }
+  .who { font-weight:600; margin-bottom:4px; }
+  .when { font-size:12px; color:var(--muted); margin-left:6px }
+  .empty { color:var(--muted); font-style:italic; padding:8px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h3>Komentar</h3>
+  <div id="pageInfo" class="meta"></div>
+
+  <form id="f" autocomplete="off">
+    <input id="name" placeholder="Nama" required />
+    <textarea id="comment" placeholder="Tulis komentar…" required minlength="2" rows="4"></textarea>
+    <button type="submit">Kirim</button>
+    <div id="msg" class="meta"></div>
+  </form>
+
+  <div id="list" class="list"></div>
+</div>
+
+<!-- Firebase (module via CDN, tanpa bundler) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, serverTimestamp,
+    query, where, orderBy, limit, getDocs
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  // ====== GANTI DENGAN PUNYAMU ======
+  const firebaseConfig = {
+    apiKey: "AIzaSyDcV_zw1Puhy3hzN3WguRG-sUmW2tnGGUE",
+    authDomain: "komentar-91441.firebaseapp.com",
+    projectId: "komentar-91441",
+    storageBucket: "komentar-91441.firebasestorage.app",
+    messagingSenderId: "728735814182",
+    appId: "1:728735814182:web:137dd7587f8966d1320ce7",
+    // measurementId tidak diperlukan untuk Firestore
+  };
+  // ===================================
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- Tentukan pageId otomatis ---
+  function getPageId() {
+    try {
+      // 1) Fallback query string ?page=/path-halaman
+      const qs = new URLSearchParams(location.search).get('page');
+      if (qs) return qs.trim().toLowerCase();
+
+      // 2) Utama: referrer dari Google Sites
+      const ref = document.referrer || "";
+      if (!ref) return "unknown";
+      const u = new URL(ref);
+      // path cukup stabil untuk identifier
+      let id = u.pathname.toLowerCase();
+      // kalau Sites-nya pakai parameter page=, ikutkan biar unik
+      const usp = new URLSearchParams(u.search);
+      if (usp.has("page")) id += "::" + usp.get("page").toLowerCase();
+      return id;
+    } catch {
+      return "unknown";
+    }
+  }
+  const pageId = getPageId();
+  document.getElementById('pageInfo').textContent = "ID Halaman: " + pageId;
+
+  // --- Render komentar ---
+  async function loadComments() {
+    const list = document.getElementById('list');
+    list.innerHTML = "";
+    const q = query(
+      collection(db, "comments"),
+      where("pageId", "==", pageId),
+      orderBy("ts", "desc"),
+      limit(50)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      list.innerHTML = `<div class="empty">Belum ada komentar.</div>`;
+      return;
+    }
+    snap.forEach(doc => {
+      const d = doc.data();
+      const when = d.ts?.toDate ? d.ts.toDate().toLocaleString() : "";
+      const el = document.createElement('div');
+      el.className = 'item';
+      el.innerHTML = `
+        <div class="who">${escapeHtml(d.name || "Anon")}
+          <span class="when">• ${when}</span>
+        </div>
+        <div class="text">${linkify(escapeHtml(d.text || ""))}</div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // --- Submit komentar ---
+  const form = document.getElementById('f');
+  const nameEl = document.getElementById('name');
+  const commentEl = document.getElementById('comment');
+  const msgEl = document.getElementById('msg');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msgEl.textContent = "Mengirim…";
+    const name = nameEl.value.trim();
+    const text = commentEl.value.trim();
+    if (!name || !text) { msgEl.textContent = "Nama & komentar wajib diisi."; return; }
+    try {
+      await addDoc(collection(db, "comments"), {
+        pageId,
+        name,
+        text,
+        ts: serverTimestamp(),
+        ref: document.referrer || null
+      });
+      commentEl.value = "";
+      msgEl.textContent = "Terkirim!";
+      loadComments();
+    } catch (err) {
+      console.error(err);
+      msgEl.textContent = "Gagal mengirim. Coba lagi.";
+    }
+  });
+
+  // --- Helpers ---
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  }
+  function linkify(s) {
+    return s.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+  }
+
+  loadComments();
+</script>
+</body>
+</html>
