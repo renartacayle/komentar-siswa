@@ -140,20 +140,10 @@ button:hover {
 
   // --- Tentukan pageId otomatis ---
   function getPageId() {
-  try {
-    const ref = document.referrer || "";
-    if (ref) {
-      const u = new URL(ref);
-      const seg = u.pathname.split('/').filter(Boolean);
-      // ambil segmen terakhir path
-      const last = seg[seg.length - 1];
-      return last ? last.toLowerCase() : "unknown";
-    }
-    return "unknown";
-  } catch {
-    return "unknown";
-  }
+  const url = new URL(window.location.href);
+  return url.searchParams.get("page") || "home";
 }
+
 
 
   const pageId = getPageId();
