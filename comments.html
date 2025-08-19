@@ -83,22 +83,68 @@
   document.getElementById('pageInfo').textContent = "ID Halaman: " + pageId;
 
   // --- Render komentar ---
+  // ... import & init Firebase seperti sebelumnya
+
   async function loadComments() {
     const list = document.getElementById('list');
     list.innerHTML = "";
-    const q = query(
-      collection(db, "comments"),
-      where("pageId", "==", pageId),
-      orderBy("ts", "desc"),
-      limit(50)
-    );
-    const snap = await getDocs(q);
+    const baseCol = collection(db, "comments");
+
+    try {
+      // jalur utama: butuh composite index (pageId + ts desc)
+      const q1 = query(
+        baseCol,
+        where("pageId","==", pageId),
+        orderBy("ts","desc"),
+        limit(50)
+      );
+      const snap = await getDocs(q1);
+      renderSnap(snap);
+    } catch (err) {
+      // fallback kalau index belum siap / belum ada
+      const msg = (""+err.message).toLowerCase();
+      const needIndex =
+        msg.includes("requires an index") ||
+        msg.includes("index is currently building");
+
+      if (!needIndex) throw err;
+
+      // Fallback: tanpa orderBy (nggak perlu composite index)
+      // Lalu kita urutkan manual di klien.
+      const q2 = query(
+        baseCol,
+        where("pageId","==", pageId),
+        limit(50)
+      );
+      const snap = await getDocs(q2);
+
+      // urutkan manual
+      const docs = [];
+      snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+      docs.sort((a,b) => {
+        const ta = a.ts?.toDate ? a.ts.toDate().getTime() : 0;
+        const tb = b.ts?.toDate ? b.ts.toDate().getTime() : 0;
+        return tb - ta; // desc
+      });
+
+      renderDocs(docs);
+    }
+  }
+
+  function renderSnap(snap) {
     if (snap.empty) {
-      list.innerHTML = `<div class="empty">Belum ada komentar.</div>`;
+      document.getElementById('list').innerHTML = `<div class="empty">Belum ada komentar.</div>`;
       return;
     }
-    snap.forEach(doc => {
-      const d = doc.data();
+    const docs = [];
+    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+    renderDocs(docs);
+  }
+
+  function renderDocs(docs) {
+    const list = document.getElementById('list');
+    list.innerHTML = "";
+    docs.forEach(d => {
       const when = d.ts?.toDate ? d.ts.toDate().toLocaleString() : "";
       const el = document.createElement('div');
       el.className = 'item';
