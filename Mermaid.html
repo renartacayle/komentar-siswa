@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Flowchart Komentar</title>
+</head>
+  <script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+
+<body>
+  <h2>Flowchart Sistem Komentar</h2>
+
+  <pre class="mermaid">
+  flowchart TD
+    A([Halaman dimuat]) --> B[Ambil pageId dari URL ?page=]
+    B --> C[Init Firebase & Firestore]
+    C --> D{Load komentar by pageId}
+    D -->|Index siap| E[Tampilkan komentar terbaru]
+    D -->|Butuh index| F[Fallback query + sort lokal]
+    E --> G{{User isi form}}
+    F --> G
+    G -->|Kirim| H[addDoc ke Firestore]
+    H -->|Sukses| I[Clear input + reload komentar]
+    H -->|Gagal| J[Tampilkan error]
+  </pre>
+</body>
+</html>
