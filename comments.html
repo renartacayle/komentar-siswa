@@ -6,29 +6,85 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Komentar</title>
 <style>
-  :root { --bg:#ffffff; --card:#ffffff; --ink:#222; --muted:#666; --line:#e5e5e5; }
-  html,body { background:var(--bg); color:var(--ink); margin:0; }
-  .wrap { max-width:720px; margin:0 auto; padding:16px; font-family:system-ui,Arial,sans-serif; }
-  h3 { margin:0 0 12px; font-size:18px; }
-  form { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
-  input, textarea { width:100%; border:1px solid #ccc; border-radius:8px; padding:10px; font-size:14px; margin:8px 0; }
-  button {
-  border: 1px solid #e6b800;     /* kuning tua biar nyatu */
-  background: #ffcc00;           /* kuning cerah */
-  color: #222;                   /* teks gelap supaya kebaca */
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 14px;
-  cursor: pointer;
-}
+  :root { 
+    --bg:#fffbea;       /* kuning muda lembut */
+    --card:#fff7cc;     /* kuning pastel lebih pekat */
+    --ink:#3a2f00;      /* coklat tua biar kontras */
+    --muted:#7a6f3a;    /* coklat keemasan */
+    --line:#ffd633;     /* garis kuning terang */
+  }
 
-  .meta { font-size:12px; color:var(--muted); margin-top:4px }
-  .list { margin-top:14px }
-  .item { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; box-shadow:0 2px 6px rgba(0,0,0,.04); }
-  .who { font-weight:600; margin-bottom:4px; }
+  html,body {
+    background:var(--bg);
+    color:var(--ink);
+    margin:0;
+    font-family: system-ui, Arial, sans-serif;
+  }
+
+  .wrap {
+    max-width:100%;     /* full kanan kiri */
+    margin:0;
+    padding:24px;
+  }
+
+  h3 {
+    margin:0 0 16px;
+    font-size:20px;
+    color:#3a2f00;
+    text-align:center;
+  }
+
+  form {
+    background:var(--card);
+    border:2px dashed var(--line);   /* biar playful kayak doodle */
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 4px 8px rgba(0,0,0,.08);
+  }
+
+  input, textarea {
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    font-size:14px;
+    margin:10px 0;
+    background:#fffef5;
+  }
+
+  button {
+    border: 2px solid #e6b800;    
+    background: #ffcc00;          
+    color: #222;                  
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight:600;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  button:hover {
+    background:#ffdb4d;   /* efek hover lebih terang */
+  }
+
+  .meta { font-size:12px; color:var(--muted); margin-top:6px }
+
+  .list { margin-top:16px }
+
+  .item {
+    background:#fffef5;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:12px;
+    box-shadow:0 3px 6px rgba(0,0,0,.06);
+  }
+
+  .who { font-weight:600; margin-bottom:4px; color:#3a2f00; }
   .when { font-size:12px; color:var(--muted); margin-left:6px }
-  .empty { color:var(--muted); font-style:italic; padding:8px 0; }
+  .empty { color:var(--muted); font-style:italic; padding:10px 0; text-align:center }
 </style>
+
 </head>
 <body>
 <div class="wrap">
