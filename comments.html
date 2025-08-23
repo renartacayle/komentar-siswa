@@ -42,55 +42,59 @@
 
   .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
 
-  /* ====== BINTANG (RATING) ====== */
-  .rate-wrap { margin:8px 0 12px; }
+  /* ====== BINTANG (RATING) — UI lebih klik-able ====== */
+  .rate-wrap { margin:10px 0 12px; }
   .rate-label { font-size:13px; color:var(--muted); margin-bottom:6px; }
 
   .stars {
     display:inline-flex;
+    flex-direction: row-reverse;   /* memudahkan ngecat bintang ke kiri */
     gap:6px;
-    user-select:none;
     align-items:center;
+    user-select:none;
   }
 
-  /* radio TIDAK display:none agar bisa di-focus saat validasi, tapi invisible */
+  /* radio tetap fokus-able (jangan display:none) */
   .stars input {
     position:absolute;
     opacity:0;
-    width:1px;
-    height:1px;
+    width:1px; height:1px;
     pointer-events:none;
   }
 
+  /* target klik besar biar nyaman di HP */
   .stars label {
-    font-size:22px;
-    line-height:1;
+    width:36px; height:36px;
+    display:inline-grid; place-items:center;
+    font-size:26px; line-height:1;
     cursor:pointer;
-    filter: drop-shadow(0 1px 0 rgba(0,0,0,.05));
+    border-radius:8px;
+    transition: transform .05s ease;
   }
-
+  .stars label:active { transform: scale(.96); }
   .stars label::before { content:"☆"; }
 
-  /* Saat hover, bintang yang dipilih dan sebelum-sebelumnya jadi ★ */
+  /* Hover: label yang di-hover + label di kanannya (row-reverse) jadi ★ */
   .stars label:hover::before,
   .stars label:hover ~ label::before { content:"★"; }
 
-  /* Saat checked, bintang yang dipilih dan sebelum-sebelumnya jadi ★ */
-  #r1:checked ~ label[for="r1"]::before { content:"★"; }
-  #r2:checked ~ label[for="r1"]::before,
-  #r2:checked ~ label[for="r2"]::before { content:"★"; }
-  #r3:checked ~ label[for="r1"]::before,
-  #r3:checked ~ label[for="r2"]::before,
-  #r3:checked ~ label[for="r3"]::before { content:"★"; }
-  #r4:checked ~ label[for="r1"]::before,
-  #r4:checked ~ label[for="r2"]::before,
-  #r4:checked ~ label[for="r3"]::before,
-  #r4:checked ~ label[for="r4"]::before { content:"★"; }
-  #r5:checked ~ label[for="r1"]::before,
-  #r5:checked ~ label[for="r2"]::before,
-  #r5:checked ~ label[for="r3"]::before,
-  #r5:checked ~ label[for="r4"]::before,
-  #r5:checked ~ label[for="r5"]::before { content:"★"; }
+  /* Checked: radio terpilih + label di kanannya (row-reverse) jadi ★ */
+  .stars input:checked ~ label::before { content:"★"; }
+
+  /* Fokus keyboard terlihat */
+  .stars label:focus-visible {
+    outline:2px solid var(--line);
+    outline-offset:2px;
+  }
+
+  /* teks nilai dipilih */
+  .rate-value {
+    display:inline-block;
+    font-size:13px;
+    color:var(--muted);
+    margin-left:8px;
+    min-width:72px; /* stabil biar gak loncat-loncat */
+  }
 
   button {
     border: 2px solid #e6b800;
@@ -129,26 +133,30 @@
   <h3>Komentar</h3>
 
   <form id="f" autocomplete="off" novalidate>
-    <input id="name" placeholder="Nama" required />
+    <input id="name" placeholder="Nama" autocomplete="name" required />
+
     <div class="rate-wrap" aria-label="Rating bintang">
       <div class="rate-label">Beri rating:</div>
-      <!-- Urutan radio 1..5; gunakan CSS sibling untuk nyalakan ★ -->
+
       <div class="stars" role="radiogroup" aria-label="Rating (1 sampai 5)">
-        <input type="radio" id="r1" name="rating" value="1" />
-        <label for="r1" title="1 bintang" tabindex="0"></label>
-
-        <input type="radio" id="r2" name="rating" value="2" />
-        <label for="r2" title="2 bintang" tabindex="0"></label>
-
-        <input type="radio" id="r3" name="rating" value="3" />
-        <label for="r3" title="3 bintang" tabindex="0"></label>
+        <!-- urutan 5 → 1 karena row-reverse -->
+        <input type="radio" id="r5" name="rating" value="5" />
+        <label for="r5" title="5 bintang" tabindex="0" aria-label="5 bintang"></label>
 
         <input type="radio" id="r4" name="rating" value="4" />
-        <label for="r4" title="4 bintang" tabindex="0"></label>
+        <label for="r4" title="4 bintang" tabindex="0" aria-label="4 bintang"></label>
 
-        <input type="radio" id="r5" name="rating" value="5" />
-        <label for="r5" title="5 bintang" tabindex="0"></label>
+        <input type="radio" id="r3" name="rating" value="3" />
+        <label for="r3" title="3 bintang" tabindex="0" aria-label="3 bintang"></label>
+
+        <input type="radio" id="r2" name="rating" value="2" />
+        <label for="r2" title="2 bintang" tabindex="0" aria-label="2 bintang"></label>
+
+        <input type="radio" id="r1" name="rating" value="1" />
+        <label for="r1" title="1 bintang" tabindex="0" aria-label="1 bintang"></label>
       </div>
+
+      <span id="rateValue" class="rate-value" aria-live="polite"></span>
     </div>
 
     <textarea id="comment" placeholder="Tulis komentar…" required minlength="2" rows="4"></textarea>
@@ -295,7 +303,7 @@
     const ratingRaw = document.querySelector('input[name="rating"]:checked')?.value || "";
     const rating = clampRating(Number(ratingRaw));
 
-    // Validasi manual untuk hindari error "not focusable"
+    // Validasi manual (hindari error "not focusable")
     if (!name) { msgEl.textContent = "Nama wajib diisi."; msgEl.classList.add('err'); nameEl.focus(); return; }
     if (!rating) { msgEl.textContent = "Pilih rating bintang."; msgEl.classList.add('err'); return; }
     if (!text || text.length < 2) { msgEl.textContent = "Komentar minimal 2 karakter."; msgEl.classList.add('err'); commentEl.focus(); return; }
@@ -314,8 +322,11 @@
       });
 
       commentEl.value = "";
+      // reset radio
       const checked = document.querySelector('input[name="rating"]:checked');
       if (checked) checked.checked = false;
+      // reset teks rating
+      updateSelectedText('');
 
       msgEl.classList.remove('err');
       msgEl.textContent = "Terkirim!";
@@ -329,7 +340,7 @@
     }
   });
 
-  // --- Helpers ---
+  // --- Helpers umum ---
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   }
@@ -346,6 +357,33 @@
     if (n > 5) return 5;
     return n;
   }
+
+  // --- UI rating: nilai terpilih & hover preview ---
+  const rateValueEl = document.getElementById('rateValue');
+  const starRadios = [...document.querySelectorAll('input[name="rating"]')];
+  const starLabels = [...document.querySelectorAll('.stars label')];
+
+  function updateSelectedText(val) {
+    rateValueEl.textContent = val ? `${val} / 5` : '';
+  }
+
+  // saat user memilih (klik radio)
+  starRadios.forEach(r => {
+    r.addEventListener('change', () => updateSelectedText(r.value));
+  });
+
+  // hover preview: tulis sementara (tanpa mengubah pilihan)
+  starLabels.forEach((label) => {
+    label.addEventListener('mouseenter', () => {
+      const forId = label.getAttribute('for');
+      const radio = document.getElementById(forId);
+      updateSelectedText(radio?.value || '');
+    });
+  });
+  document.querySelector('.stars').addEventListener('mouseleave', () => {
+    const selected = document.querySelector('input[name="rating"]:checked')?.value || '';
+    updateSelectedText(selected);
+  });
 
   // Muat komentar awal
   loadComments();
