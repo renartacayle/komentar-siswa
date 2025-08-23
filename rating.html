@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rating</title>
+<style>
+  body {
+    font-family: system-ui, Arial, sans-serif;
+    margin:0; padding:10px;
+    background:#fffef5;
+    color:#3a2f00;
+    text-align:center;
+  }
+  .rating-box {
+    display:inline-block;
+    padding:12px 20px;
+    border:2px solid #ffd633;
+    border-radius:12px;
+    background:#fff7cc;
+    box-shadow:0 3px 6px rgba(0,0,0,.08);
+  }
+  .stars-read {
+    font-size:22px;
+    letter-spacing:2px;
+  }
+  .value {
+    font-weight:600;
+    margin-top:6px;
+    font-size:14px;
+    color:#7a6f3a;
+  }
+</style>
+</head>
+<body>
+  <div class="rating-box">
+    <div id="stars" class="stars-read">☆☆☆☆☆</div>
+    <div id="avg" class="value">Memuat…</div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import {
+    getFirestore, collection, query, where, getDocs
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  // Konfig Firestore sama persis dengan comments.html
+  const firebaseConfig = {
+    apiKey: "AIzaSyDcV_zw1Puhy3hzN3WguRG-sUmW2tnGGUE",
+    authDomain: "komentar-91441.firebaseapp.com",
+    projectId: "komentar-91441",
+    storageBucket: "komentar-91441.firebasestorage.app",
+    messagingSenderId: "728735814182",
+    appId: "1:728735814182:web:137dd7587f8966d1320ce7",
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ambil pageId (sama logikanya dengan comments.html)
+  function getPageId() {
+    const url = new URL(window.location.href);
+    const q = url.searchParams.get("page");
+    if (q) return q.trim().replace(/[^\w-]/g, "_");
+    if (document.referrer) {
+      try {
+        const r = new URL(document.referrer);
+        return (r.origin + r.pathname).replace(/[^\w-]/g, "_");
+      } catch(_) {}
+    }
+    return (url.pathname + url.hash).replace(/[^\w-]/g, "_") || "unknown";
+  }
+  const pageId = getPageId();
+
+  const starsEl = document.getElementById('stars');
+  const avgEl   = document.getElementById('avg');
+
+  function stars(n) {
+    return "★".repeat(Math.round(n)) + "☆".repeat(5-Math.round(n));
+  }
+
+  async function loadRating() {
+    try {
+      const q1 = query(collection(db,"comments"), where("pageId","==", pageId));
+      const snap = await getDocs(q1);
+
+      let sum = 0, count = 0;
+      snap.forEach(d => {
+        const r = d.data().rating;
+        if (typeof r === "number" && r >=1 && r<=5) {
+          sum += r; count++;
+        }
+      });
+
+      if (count === 0) {
+        starsEl.textContent = "☆☆☆☆☆";
+        avgEl.textContent   = "Belum ada rating";
+      } else {
+        const avg = sum / count;
+        starsEl.textContent = stars(avg);
+        avgEl.textContent   = `${avg.toFixed(1)} / 5 (${count} rating)`;
+      }
+    } catch(err) {
+      console.error(err);
+      avgEl.textContent = "Gagal memuat rating";
+    }
+  }
+
+  loadRating();
+</script>
+</body>
+</html>
