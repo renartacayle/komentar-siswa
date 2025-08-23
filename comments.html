@@ -6,17 +6,19 @@
 <title>Komentar</title>
 <style>
   :root { 
-    --card:#fff7cc;
-    --ink:#3a2f00;
-    --muted:#7a6f3a;
-    --line:#ffd633;
+    --card:#fff7cc;     /* kuning pastel lebih pekat */
+    --ink:#3a2f00;      /* coklat tua biar kontras */
+    --muted:#7a6f3a;    /* coklat keemasan */
+    --line:#ffd633;     /* garis kuning terang */
   }
+
   html,body {
+    background:#fffef5;
     color:var(--ink);
     margin:0;
     font-family: system-ui, Arial, sans-serif;
-    background:#fffef5;
   }
+
   .wrap { max-width:100%; margin:0; padding:24px; }
   h3 { margin:0 0 16px; font-size:20px; color:#3a2f00; text-align:center; }
 
@@ -27,48 +29,96 @@
     padding:16px;
     box-shadow:0 4px 8px rgba(0,0,0,.08);
   }
+
   input, textarea {
-    width:100%; border:1px solid var(--line);
-    border-radius:10px; padding:12px; font-size:14px; margin:10px 0; background:#fffef5;
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    font-size:14px;
+    margin:10px 0;
+    background:#fffef5;
   }
+
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
 
   /* ====== BINTANG (RATING) ====== */
   .rate-wrap { margin:8px 0 12px; }
   .rate-label { font-size:13px; color:var(--muted); margin-bottom:6px; }
+
   .stars {
-    display:inline-flex; gap:6px; user-select:none;
+    display:inline-flex;
+    gap:6px;
+    user-select:none;
+    align-items:center;
   }
-  .stars input { display:none; }
+
+  /* radio TIDAK display:none agar bisa di-focus saat validasi, tapi invisible */
+  .stars input {
+    position:absolute;
+    opacity:0;
+    width:1px;
+    height:1px;
+    pointer-events:none;
+  }
+
   .stars label {
-    font-size:22px; line-height:1; cursor:pointer;
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
     filter: drop-shadow(0 1px 0 rgba(0,0,0,.05));
   }
-  .stars label::before { content:"☆"; }
-  .stars input:checked ~ label::before { content:"☆"; } /* reset kanan */
-  /* trik: saat sebuah radio dipilih, semua label SEBELUM-nya jadi ★ */
-  .stars label:hover ~ label::before,
-  .stars label:hover::before { content:"★"; }
-  .stars input:checked + label::before,
-  .stars input:checked + label ~ label::before { content:"★"; }
 
-  /* aksesibilitas fokus keyboard */
-  .stars label:focus { outline:2px solid var(--line); outline-offset:2px; }
+  .stars label::before { content:"☆"; }
+
+  /* Saat hover, bintang yang dipilih dan sebelum-sebelumnya jadi ★ */
+  .stars label:hover::before,
+  .stars label:hover ~ label::before { content:"★"; }
+
+  /* Saat checked, bintang yang dipilih dan sebelum-sebelumnya jadi ★ */
+  #r1:checked ~ label[for="r1"]::before { content:"★"; }
+  #r2:checked ~ label[for="r1"]::before,
+  #r2:checked ~ label[for="r2"]::before { content:"★"; }
+  #r3:checked ~ label[for="r1"]::before,
+  #r3:checked ~ label[for="r2"]::before,
+  #r3:checked ~ label[for="r3"]::before { content:"★"; }
+  #r4:checked ~ label[for="r1"]::before,
+  #r4:checked ~ label[for="r2"]::before,
+  #r4:checked ~ label[for="r3"]::before,
+  #r4:checked ~ label[for="r4"]::before { content:"★"; }
+  #r5:checked ~ label[for="r1"]::before,
+  #r5:checked ~ label[for="r2"]::before,
+  #r5:checked ~ label[for="r3"]::before,
+  #r5:checked ~ label[for="r4"]::before,
+  #r5:checked ~ label[for="r5"]::before { content:"★"; }
 
   button {
-    border: 2px solid #e6b800; background:#ffcc00; color:#222;
-    border-radius:10px; padding:12px 18px; font-size:15px; font-weight:600;
-    cursor:pointer; transition: background .2s;
+    border: 2px solid #e6b800;
+    background: #ffcc00;
+    color: #222;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight:600;
+    cursor: pointer;
+    transition: background .2s;
   }
   button:hover { background:#ffdb4d; }
 
   .meta { font-size:12px; color:var(--muted); margin-top:6px }
+  .err  { color:#b30000; }
 
   .list { margin-top:16px }
   .item {
-    background:#fffef5; border:1px solid var(--line); border-radius:12px;
-    padding:14px; margin-bottom:12px; box-shadow:0 3px 6px rgba(0,0,0,.06);
+    background:#fffef5;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:12px;
+    box-shadow:0 3px 6px rgba(0,0,0,.06);
   }
-  .who { font-weight:600; margin-bottom:4px; color:#3a2f00; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+
+  .who { font-weight:600; margin-bottom:4px; color:#3a2f00; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .when { font-size:12px; color:var(--muted); }
   .stars-read { font-size:16px; letter-spacing:2px; }
   .empty { color:var(--muted); font-style:italic; padding:10px 0; text-align:center }
@@ -78,13 +128,13 @@
 <div class="wrap">
   <h3>Komentar</h3>
 
-  <form id="f" autocomplete="off">
+  <form id="f" autocomplete="off" novalidate>
     <input id="name" placeholder="Nama" required />
     <div class="rate-wrap" aria-label="Rating bintang">
       <div class="rate-label">Beri rating:</div>
-      <!-- Urutan 1→5 agar screen reader nyaman; styling urus ikon -->
-      <div class="stars" role="radiogroup" aria-label="Rating">
-        <input type="radio" id="r1" name="rating" value="1" required />
+      <!-- Urutan radio 1..5; gunakan CSS sibling untuk nyalakan ★ -->
+      <div class="stars" role="radiogroup" aria-label="Rating (1 sampai 5)">
+        <input type="radio" id="r1" name="rating" value="1" />
         <label for="r1" title="1 bintang" tabindex="0"></label>
 
         <input type="radio" id="r2" name="rating" value="2" />
@@ -102,8 +152,11 @@
     </div>
 
     <textarea id="comment" placeholder="Tulis komentar…" required minlength="2" rows="4"></textarea>
-    <button type="submit">Kirim</button>
-    <div id="msg" class="meta"></div>
+
+    <div class="row">
+      <button type="submit" id="btnSend">Kirim</button>
+      <div id="msg" class="meta" role="status" aria-live="polite"></div>
+    </div>
   </form>
 
   <div id="list" class="list"></div>
@@ -117,7 +170,7 @@
     query, where, orderBy, limit, getDocs
   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  // ====== GANTI DENGAN PUNYAMU (sudah dari kamu) ======
+  // ====== KONFIG FIREBASE (punyamu) ======
   const firebaseConfig = {
     apiKey: "AIzaSyDcV_zw1Puhy3hzN3WguRG-sUmW2tnGGUE",
     authDomain: "komentar-91441.firebaseapp.com",
@@ -126,23 +179,39 @@
     messagingSenderId: "728735814182",
     appId: "1:728735814182:web:137dd7587f8966d1320ce7",
   };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
 
-  // --- Page ID otomatis berbasis path (hindari 'unknown')
+  // Init
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // --- Page ID otomatis ---
   function getPageId() {
     const url = new URL(window.location.href);
-    return (url.pathname + url.hash).replace(/[^\w-]/g, "_");
+    // 1) Prioritas query ?page=
+    const q = url.searchParams.get("page");
+    if (q) return q.trim().replace(/[^\w-]/g, "_");
+
+    // 2) Fallback: gunakan document.referrer (URL halaman induk Google Sites)
+    if (document.referrer) {
+      try {
+        const r = new URL(document.referrer);
+        return (r.origin + r.pathname).replace(/[^\w-]/g, "_");
+      } catch(_) {}
+    }
+
+    // 3) Last resort: path file sendiri
+    return (url.pathname + url.hash).replace(/[^\w-]/g, "_") || "unknown";
   }
   const pageId = getPageId();
 
-  // --- Load & render komentar
+  // --- Render komentar ---
   async function loadComments() {
     const list = document.getElementById('list');
     list.innerHTML = "";
     const baseCol = collection(db, "comments");
 
     try {
+      // jalur utama: butuh composite index (pageId + ts desc)
       const q1 = query(
         baseCol,
         where("pageId","==", pageId),
@@ -152,11 +221,20 @@
       const snap = await getDocs(q1);
       renderSnap(snap);
     } catch (err) {
+      // fallback jika index belum ada
       const msg = (""+err.message).toLowerCase();
       const needIndex = msg.includes("requires an index") || msg.includes("index is currently building");
-      if (!needIndex) throw err;
-
-      const q2 = query(baseCol, where("pageId","==", pageId), limit(50));
+      if (!needIndex) {
+        console.error(err);
+        document.getElementById('list').innerHTML =
+          `<div class="empty">Gagal memuat komentar.</div>`;
+        return;
+      }
+      const q2 = query(
+        baseCol,
+        where("pageId","==", pageId),
+        limit(50)
+      );
       const snap = await getDocs(q2);
       const docs = [];
       snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
@@ -191,7 +269,7 @@
       el.innerHTML = `
         <div class="who">
           <span>${escapeHtml(d.name || "Anon")}</span>
-          ${r ? `<span class="stars-read" aria-label="${r} dari 5">` + stars(r) + `</span>` : ``}
+          ${r ? `<span class="stars-read" aria-label="${r} dari 5">${stars(r)}</span>` : ``}
           <span class="when">• ${when}</span>
         </div>
         <div class="text">${linkify(escapeHtml(d.text || ""))}</div>
@@ -200,45 +278,58 @@
     });
   }
 
-  // --- Submit komentar + rating
+  // --- Submit komentar ---
   const form = document.getElementById('f');
   const nameEl = document.getElementById('name');
   const commentEl = document.getElementById('comment');
   const msgEl = document.getElementById('msg');
+  const btn = document.getElementById('btnSend');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    msgEl.textContent = "Mengirim…";
+    msgEl.classList.remove('err');
+    msgEl.textContent = "";
 
     const name = nameEl.value.trim();
     const text = commentEl.value.trim();
     const ratingRaw = document.querySelector('input[name="rating"]:checked')?.value || "";
     const rating = clampRating(Number(ratingRaw));
 
-    if (!name || !text) { msgEl.textContent = "Nama & komentar wajib diisi."; return; }
-    if (!rating) { msgEl.textContent = "Pilih rating bintang dulu ya."; return; }
+    // Validasi manual untuk hindari error "not focusable"
+    if (!name) { msgEl.textContent = "Nama wajib diisi."; msgEl.classList.add('err'); nameEl.focus(); return; }
+    if (!rating) { msgEl.textContent = "Pilih rating bintang."; msgEl.classList.add('err'); return; }
+    if (!text || text.length < 2) { msgEl.textContent = "Komentar minimal 2 karakter."; msgEl.classList.add('err'); commentEl.focus(); return; }
+
+    btn.disabled = true;
+    msgEl.textContent = "Mengirim…";
 
     try {
       await addDoc(collection(db, "comments"), {
-        pageId, name, text,
-        rating, // <= SIMPAN BINTANG
-        ts: serverTimestamp(),
+        pageId,
+        name,
+        text,
+        rating,                 // simpan rating per comment
+        ts: serverTimestamp(),  // waktu server
         ref: document.referrer || null
       });
+
       commentEl.value = "";
-      // reset radio
       const checked = document.querySelector('input[name="rating"]:checked');
       if (checked) checked.checked = false;
 
+      msgEl.classList.remove('err');
       msgEl.textContent = "Terkirim!";
       loadComments();
     } catch (err) {
       console.error(err);
-      msgEl.textContent = "Gagal mengirim. Coba lagi.";
+      msgEl.classList.add('err');
+      msgEl.textContent = "Gagal mengirim (izin Firestore?).";
+    } finally {
+      btn.disabled = false;
     }
   });
 
-  // --- Helpers
+  // --- Helpers ---
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   }
@@ -246,10 +337,7 @@
     return s.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
   }
   function stars(n) {
-    // tampilkan n "★" + (5-n) "☆"
-    const full = "★".repeat(n);
-    const empty = "☆".repeat(5 - n);
-    return full + empty;
+    return "★".repeat(n) + "☆".repeat(5-n);
   }
   function clampRating(n) {
     if (!Number.isFinite(n)) return 0;
@@ -259,6 +347,7 @@
     return n;
   }
 
+  // Muat komentar awal
   loadComments();
 </script>
 </body>
