@@ -10,6 +10,14 @@
     --ink:#3a2f00;      /* coklat tua biar kontras */
     --muted:#7a6f3a;    /* coklat keemasan */
     --line:#ffd633;     /* garis kuning terang */
+
+    /* warna untuk komentar GURU */
+    --guru-bg:#e9f2ff;   /* biru muda */
+    --guru-line:#99c2ff; /* garis biru lembut */
+    --guru-ink:#003366;  /* teks biru tua */
+    --guru-sub:#245a9a;  /* teks tambahan */
+    --guru-badge:#d6e7ff;/* latar badge */
+    --guru-badge-ink:#0b4aa2; /* teks badge */
   }
 
   html,body {
@@ -122,6 +130,34 @@
     box-shadow:0 3px 6px rgba(0,0,0,.06);
   }
 
+  /* ====== VARIAN UNTUK KOMENTAR GURU ====== */
+  .item.guru {
+    background:var(--guru-bg);
+    border-color:var(--guru-line);
+  }
+  .item.guru .who {
+    color:var(--guru-ink);
+  }
+  .item.guru .when {
+    color:var(--guru-sub);
+  }
+  .item.guru .text {
+    color:#00284d;
+  }
+  .badge {
+    font-size:12px;
+    padding:2px 8px;
+    border-radius:999px;
+    border:1px solid rgba(0,0,0,.08);
+    background:#f4f4f4;
+    color:#333;
+  }
+  .badge.guru {
+    background:var(--guru-badge);
+    color:var(--guru-badge-ink);
+    border-color:var(--guru-line);
+  }
+
   .who { font-weight:600; margin-bottom:4px; color:#3a2f00; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .when { font-size:12px; color:var(--muted); }
   .stars-read { font-size:16px; letter-spacing:2px; }
@@ -134,6 +170,12 @@
 
   <form id="f" autocomplete="off" novalidate>
     <input id="name" placeholder="Nama" autocomplete="name" required />
+
+    <!-- Opsi "Saya guru" -->
+    <label style="font-size:14px; display:flex; align-items:center; gap:6px; margin:6px 0;">
+      <input type="checkbox" id="isGuru" style="width:auto; height:auto;">
+      Saya guru
+    </label>
 
     <div class="rate-wrap" aria-label="Rating bintang">
       <div class="rate-label">Beri rating:</div>
@@ -178,7 +220,7 @@
     query, where, orderBy, limit, getDocs
   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  // ====== KONFIG FIREBASE (punyamu) ======
+  // ====== KONFIG FIREBASE (punyamu) ====== 
   const firebaseConfig = {
     apiKey: "AIzaSyDcV_zw1Puhy3hzN3WguRG-sUmW2tnGGUE",
     authDomain: "komentar-91441.firebaseapp.com",
@@ -272,11 +314,13 @@
     docs.forEach(d => {
       const when = d.ts?.toDate ? d.ts.toDate().toLocaleString() : "";
       const r = clampRating(d.rating);
+      const isGuru = (d.role === "guru");
       const el = document.createElement('div');
-      el.className = 'item';
+      el.className = 'item' + (isGuru ? ' guru' : '');
       el.innerHTML = `
         <div class="who">
           <span>${escapeHtml(d.name || "Anon")}</span>
+          ${isGuru ? `<span class="badge guru" title="Komentar dari guru">Guru</span>` : ``}
           ${r ? `<span class="stars-read" aria-label="${r} dari 5">${stars(r)}</span>` : ``}
           <span class="when">• ${when}</span>
         </div>
@@ -292,6 +336,7 @@
   const commentEl = document.getElementById('comment');
   const msgEl = document.getElementById('msg');
   const btn = document.getElementById('btnSend');
+  const isGuruEl = document.getElementById('isGuru');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -302,6 +347,7 @@
     const text = commentEl.value.trim();
     const ratingRaw = document.querySelector('input[name="rating"]:checked')?.value || "";
     const rating = clampRating(Number(ratingRaw));
+    const role = isGuruEl.checked ? "guru" : "murid";
 
     // Validasi manual (hindari error "not focusable")
     if (!name) { msgEl.textContent = "Nama wajib diisi."; msgEl.classList.add('err'); nameEl.focus(); return; }
@@ -317,6 +363,7 @@
         name,
         text,
         rating,                 // simpan rating per comment
+        role,                   // simpan role
         ts: serverTimestamp(),  // waktu server
         ref: document.referrer || null
       });
@@ -327,6 +374,8 @@
       if (checked) checked.checked = false;
       // reset teks rating
       updateSelectedText('');
+      // opsional reset role
+      // isGuruEl.checked = false;
 
       msgEl.classList.remove('err');
       msgEl.textContent = "Terkirim!";
