@@ -42,8 +42,7 @@
 </head>
 <body>
 
-<!-- CUMA SATU TOMBOL INI -->
-<button id="loveBtn" class="love-btn">
+<button id="loveBtn" class="love-btn" type="button">
   <span id="loveIcon" class="love-icon">♡</span>
   <span id="loveCount" class="love-count">0</span>
   <span>love</span>
@@ -64,10 +63,11 @@
     messagingSenderId: "728735814182",
     appId: "1:728735814182:web:137dd7587f8966d1320ce7",
   };
+
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
 
-  // PAGE ID
+  // ===== PAGE ID =====
   function getPageId() {
     const url = new URL(window.location.href);
     const q = url.searchParams.get("page");
@@ -76,33 +76,14 @@
   }
   const pageId = getPageId();
 
+  // ===== DOM REF =====
   const loveBtn     = document.getElementById("loveBtn");
   const loveIconEl  = document.getElementById("loveIcon");
   const loveCountEl = document.getElementById("loveCount");
 
   const loveRef = doc(db, "love", pageId);
 
-  // TIDAK ADA ensureLoveDoc lagi
-
-loveBtn.addEventListener("click", async () => {
-  loveBtn.disabled = true;
-  try {
-    // coba increment dulu
-    await updateDoc(loveRef, { count: increment(1) });
-  } catch (e) {
-    console.error("updateDoc gagal, coba setDoc:", e);
-    // kalau dokumen belum ada, bikin dengan count = 1
-    try {
-      await setDoc(loveRef, { count: 1 });
-    } catch (e2) {
-      console.error("setDoc juga gagal:", e2);
-    }
-  } finally {
-    loveBtn.disabled = false;
-  }
-});
-
-
+  // ===== REALTIME DISPLAY =====
   onSnapshot(loveRef, (snap) => {
     if (snap.exists()) {
       const c = snap.data().count ?? 0;
@@ -114,8 +95,24 @@ loveBtn.addEventListener("click", async () => {
     }
   });
 
-
-
+  // ===== CLICK HANDLER =====
+  loveBtn.addEventListener("click", async () => {
+    loveBtn.disabled = true;
+    try {
+      // coba increment dulu
+      await updateDoc(loveRef, { count: increment(1) });
+    } catch (e) {
+      console.error("updateDoc gagal, coba setDoc:", e);
+      // kalau dokumen belum ada, bikin dengan count = 1
+      try {
+        await setDoc(loveRef, { count: 1 });
+      } catch (e2) {
+        console.error("setDoc juga gagal:", e2);
+      }
+    } finally {
+      loveBtn.disabled = false;
+    }
+  });
 </script>
 
 </body>
