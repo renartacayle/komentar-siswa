@@ -12,43 +12,46 @@
       --line:#ffd633;
     }
 
-    html,body {
+    html, body {
       margin:0;
       padding:0;
-      background:#fffef5;
+      /* transparan biar nyatu sama background Google Sites */
+      background:transparent;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
+    /* Jangan full-screen flex lagi, cukup konten kecil */
     body {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:100vh;
+      display:block;
     }
 
     .wrap {
-      text-align:center;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:4px;
     }
 
     .love-box {
       display:inline-flex;
       align-items:center;
       gap:8px;
-      padding:10px 16px;
+      padding:6px 10px;
       border-radius:999px;
       border:1px solid var(--line);
       background:var(--card);
-      box-shadow:0 2px 4px rgba(0,0,0,.08);
+      box-shadow:0 1px 3px rgba(0,0,0,.12);
     }
 
     .love-btn {
       border:none;
       border-radius:999px;
-      padding:6px 12px;
-      font-size:16px;
+      padding:4px 10px;
+      font-size:14px;
       cursor:pointer;
       background:#ff4b6a;
       color:#fff;
+      line-height:1.2;
     }
 
     .love-btn:active {
@@ -58,23 +61,16 @@
     .love-count {
       font-weight:600;
       color:var(--ink);
-      min-width:28px;
+      min-width:24px;
       text-align:right;
-    }
-
-    .page-label {
-      margin-top:8px;
-      font-size:12px;
-      color:var(--muted);
-      word-break:break-all;
-      max-width:240px;
+      font-size:14px;
     }
 
     .status {
-      margin-top:4px;
-      font-size:12px;
+      font-size:11px;
       color:var(--muted);
-      min-height:1em;
+      margin-left:6px;
+      min-width:80px;
     }
   </style>
 </head>
@@ -84,12 +80,11 @@
       <button id="love-btn" class="love-btn">❤️ Love</button>
       <span id="love-count" class="love-count">0</span>
     </div>
-    <div id="page-label" class="page-label"></div>
     <div id="status" class="status"></div>
   </div>
 
   <script type="module">
-    // ========= 1. IMPORT FIREBASE (VERSI 12.x, SAMA KAYAK comments.html) =========
+    // ========= 1. IMPORT FIREBASE (SAMAIN VERSI DENGAN comments.html KAMU) =========
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import {
       getFirestore,
@@ -124,9 +119,6 @@
     const loveBtn     = document.getElementById("love-btn");
     const loveCountEl = document.getElementById("love-count");
     const statusEl    = document.getElementById("status");
-    const pageLabelEl = document.getElementById("page-label");
-
-    pageLabelEl.textContent = "Halaman: " + PAGE_ID;
 
     function setStatus(msg) {
       statusEl.textContent = msg || "";
@@ -154,37 +146,36 @@
           }
         });
 
-        setStatus("");
+        setStatus(""); // clear "Memuat..."
       } catch (err) {
-        console.error(err);
-        setStatus("Gagal memuat love (cek rules / config).");
+        console.error("initLove error:", err);
+        setStatus("Gagal memuat (" + (err.code || "cek console") + ")");
       }
     }
 
     // ========= 5. HANDLE KLIK TOMBOL =========
     loveBtn.addEventListener("click", async () => {
-      setStatus("Mengirim love...");
+      setStatus("Mengirim...");
       loveBtn.disabled = true;
 
       try {
-        // rules: update hanya boleh ubah count, dan HARUS +1
         await updateDoc(loveDocRef, {
           count: increment(1)
         });
-        setStatus("Love terkirim 💕");
+        setStatus("❤️ OK");
       } catch (err) {
-        console.warn("updateDoc gagal, coba create jika belum ada:", err);
+        console.warn("updateDoc gagal:", err);
         try {
           const snap = await getDoc(loveDocRef);
           if (!snap.exists()) {
             await setDoc(loveDocRef, { count: 1 });
-            setStatus("Love pertama 💕");
+            setStatus("❤️ pertama");
           } else {
-            setStatus("Gagal mengirim love.");
+            setStatus("Gagal kirim (" + (err.code || "err") + ")");
           }
         } catch (err2) {
-          console.error(err2);
-          setStatus("Gagal mengirim love.");
+          console.error("setDoc fallback error:", err2);
+          setStatus("Error total");
         }
       } finally {
         loveBtn.disabled = false;
