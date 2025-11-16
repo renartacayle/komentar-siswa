@@ -9,7 +9,7 @@
     font-family: system-ui, Arial, sans-serif;
     margin:0; padding:6px;
     text-align:center;
-    
+    background:#fffef5;
     color:#3a2f00;
   }
 
@@ -63,7 +63,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import {
     getFirestore,
-    doc, setDoc, updateDoc, onSnapshot, increment
+    doc, setDoc, updateDoc, onSnapshot, increment, getDoc
   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
   // ==== Firestore ====
@@ -102,15 +102,23 @@
 
   const loveRef = doc(db, "love", pageId);
 
-  // pastikan dokumen exist
+  // pastikan dokumen exist hanya SEKALI (saat pertama kali)
   async function ensureLoveDoc() {
-    await setDoc(loveRef, { count: 0 }, { merge: true });
+    try {
+      const snap = await getDoc(loveRef);
+      if (!snap.exists()) {
+        await setDoc(loveRef, { count: 0 });
+      }
+    } catch (err) {
+      console.error("Gagal ensureLoveDoc:", err);
+    }
   }
 
   // realtime updater
   onSnapshot(loveRef, (snap) => {
     if (snap.exists()) {
-      const c = snap.data().count ?? 0;
+      const data = snap.data();
+      const c = typeof data.count === "number" ? data.count : 0;
       loveCountEl.textContent = c;
       loveIconEl.textContent  = c > 0 ? "❤" : "♡";
     } else {
@@ -125,12 +133,14 @@
     try {
       await ensureLoveDoc();
       await updateDoc(loveRef, { count: increment(1) });
+    } catch (err) {
+      console.error("Gagal menambah love:", err);
     } finally {
       loveBtn.disabled = false;
     }
   });
 
-  // init
+  // init saat load
   ensureLoveDoc();
 </script>
 
