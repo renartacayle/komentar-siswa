@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Love Widget Rena</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #fffdf6;
+    }
+    .love-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid #ffd966;
+      background: #fff7c2;
+      box-shadow: 0 2px 4px rgba(0,0,0,.08);
+    }
+    .love-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #ff4b6a;
+      color: white;
+    }
+    .love-btn:active {
+      transform: scale(0.96);
+    }
+    .love-count {
+      font-weight: 600;
+      color: #5a3b00;
+      min-width: 24px;
+      text-align: right;
+    }
+    .status {
+      font-size: 12px;
+      color: #7a6f3a;
+      margin-top: 4px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div>
+    <div class="love-box">
+      <button id="love-btn" class="love-btn">❤️ Love</button>
+      <span id="love-count" class="love-count">0</span>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <script type="module">
+    // ---------- 1. IMPORT FIREBASE ----------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      increment,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+    // ---------- 2. CONFIG FIREBASE ----------
+    // GANTI DENGAN PUNYA KAMU SENDIRI
+    const firebaseConfig = {
+      apiKey: "ISI_PUNYAMU",
+      authDomain: "ISI_PUNYAMU.firebaseapp.com",
+      projectId: "ISI_PUNYAMU",
+      storageBucket: "ISI_PUNYAMU.appspot.com",
+      messagingSenderId: "ISI_PUNYAMU",
+      appId: "ISI_PUNYAMU"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    // ---------- 3. SETTING ID UNIK UNTUK HALAMAN ----------
+    // Misal: satu dokumen per halaman Google Sites
+    // Kamu boleh ganti manual, atau generate dari URL, dll.
+    const PAGE_ID = "halaman-gsite-utama"; 
+
+    const loveDocRef = doc(db, "loveCounters", PAGE_ID);
+
+    const loveBtn   = document.getElementById("love-btn");
+    const loveCount = document.getElementById("love-count");
+    const statusEl  = document.getElementById("s
