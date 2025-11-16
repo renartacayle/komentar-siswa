@@ -86,13 +86,84 @@
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
-    // ---------- 3. SETTING ID UNIK UNTUK HALAMAN ----------
-    // Misal: satu dokumen per halaman Google Sites
-    // Kamu boleh ganti manual, atau generate dari URL, dll.
-    const PAGE_ID = "halaman-gsite-utama"; 
+    // ---------- 3. ID UNIK UNTUK HALAMAN ----------
+    // Bisa kamu ganti manual per embed, atau nanti dibikin dinamis via ?pageId=xxx
+    const PAGE_ID = "halaman-gsite-utama";
 
     const loveDocRef = doc(db, "loveCounters", PAGE_ID);
 
     const loveBtn   = document.getElementById("love-btn");
     const loveCount = document.getElementById("love-count");
-    const statusEl  = document.getElementById("s
+    const statusEl  = document.getElementById("status");
+
+    function setStatus(msg) {
+      statusEl.textContent = msg || "";
+    }
+
+    // ---------- 4. LOAD AWAL + REALTIME LISTENER ----------
+    async function initLove() {
+      setStatus("Memuat...");
+      try {
+        const snap = await getDoc(loveDocRef);
+        if (!snap.exists()) {
+          // Sesuai rules: create hanya field { count: int >= 0 }
+          await setDoc(loveDocRef, { count: 0 });
+          loveCount.textContent = "0";
+        } else {
+          const data = snap.data();
+          loveCount.textContent = (data.count ?? 0).toString();
+        }
+
+        // realtime update kalau ada user lain yang klik
+        onSnapshot(loveDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            loveCount.textContent = (data.count ?? 0).toString();
+          }
+        });
+
+        setStatus("");
+      } catch (err) {
+        console.error(err);
+        setStatus("Gagal memuat love 😔 (cek rules Firestore)");
+      }
+    }
+
+    // ---------- 5. HANDLE KLIK TOMBOL ----------
+    loveBtn.addEventListener("click", async () => {
+      setStatus("Mengirim love...");
+      loveBtn.disabled = true;
+
+      try {
+        // Sesuai rules update: cuma boleh ubah count dan harus +1
+        await updateDoc(loveDocRef, {
+          count: increment(1)
+        });
+        setStatus("Love terkirim 💕");
+      } catch (err) {
+        console.warn("updateDoc gagal, coba create kalau belum ada:", err);
+        try {
+          // Kalau dokumen belum ada (race condition), buat dengan count = 1
+          const snap = await getDoc(loveDocRef);
+          if (!snap.exists()) {
+            await setDoc(loveDocRef, { count: 1 });
+            setStatus("Love pertama 💕");
+          } else {
+            // Kalau dokumen sebenarnya ada tapi tetap gagal, laporkan error
+            setStatus("Gagal mengirim love 😭");
+          }
+        } catch (err2) {
+          console.error(err2);
+          setStatus("Gagal mengirim love 😭");
+        }
+      } finally {
+        // Boleh klik berkali-kali (rules sudah batasi hanya +1 per write)
+        loveBtn.disabled = false;
+      }
+    });
+
+    // mulai
+    initLove();
+  </script>
+</body>
+</html>
