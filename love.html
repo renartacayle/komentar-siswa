@@ -42,9 +42,11 @@
 </head>
 <body>
 
+<!-- CUMA SATU TOMBOL INI -->
 <button id="loveBtn" class="love-btn">
   <span id="loveIcon" class="love-icon">♡</span>
   <span id="loveCount" class="love-count">0</span>
+  <span>love</span>
 </button>
 
 <script type="module">
@@ -70,14 +72,12 @@
     const url = new URL(window.location.href);
     const q = url.searchParams.get("page");
     if (q) return q.replace(/[^\w-]/g, "_");
-
     return "unknown";
   }
   const pageId = getPageId();
 
-  // DOM
-  const loveBtn = document.getElementById("loveBtn");
-  const loveIconEl = document.getElementById("loveIcon");
+  const loveBtn     = document.getElementById("loveBtn");
+  const loveIconEl  = document.getElementById("loveIcon");
   const loveCountEl = document.getElementById("loveCount");
 
   const loveRef = doc(db, "love", pageId);
@@ -90,7 +90,10 @@
     if (snap.exists()) {
       const c = snap.data().count ?? 0;
       loveCountEl.textContent = c;
-      loveIconEl.textContent = c > 0 ? "❤" : "♡";
+      loveIconEl.textContent  = c > 0 ? "❤" : "♡";
+    } else {
+      loveCountEl.textContent = "0";
+      loveIconEl.textContent  = "♡";
     }
   });
 
