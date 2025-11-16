@@ -1,72 +1,51 @@
+
 <!doctype html>
 <html lang="id">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Love Button</title>
+<title>Rating</title>
 <style>
   body {
     font-family: system-ui, Arial, sans-serif;
-    margin:0; padding:6px;
-    text-align:center;
-    background:#fffef5;
+    margin:0; padding:10px;
+    
     color:#3a2f00;
+    text-align:center;
   }
-
-  .love-btn {
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    border:1px solid #ff99bb;
-    background:#ffe6f0;
-    border-radius:999px;
-    padding:6px 14px;
-    font-size:14px;
-    cursor:pointer;
-    box-shadow:0 2px 4px rgba(0,0,0,.06);
-    transition:.15s;
+  .rating-box {
+    display:inline-block;
+    padding:12px 20px;
+    border:2px solid #ffd633;
+    border-radius:12px;
+    background:#fff7cc;
+    box-shadow:0 3px 6px rgba(0,0,0,.08);
   }
-
-  .love-btn:hover {
-    transform:translateY(-1px);
-    box-shadow:0 3px 8px rgba(0,0,0,.1);
+  .stars-read {
+    font-size:22px;
+    letter-spacing:2px;
   }
-
-  .love-btn:active {
-    transform:translateY(0);
-    box-shadow:0 1px 3px rgba(0,0,0,.08);
-  }
-
-  .love-btn[disabled] {
-    opacity:.6;
-    cursor:wait;
-  }
-
-  .love-icon {
-    font-size:18px;
-  }
-
-  .love-count {
+  .value {
     font-weight:600;
+    margin-top:6px;
+    font-size:14px;
+    color:#7a6f3a;
   }
 </style>
 </head>
 <body>
-
-<button id="loveBtn" class="love-btn">
-  <span id="loveIcon" class="love-icon">♡</span>
-  <span id="loveCount" class="love-count">0</span>
-  <span>love</span>
-</button>
+  <div class="rating-box">
+    <div id="stars" class="stars-read">☆☆☆☆☆</div>
+    <div id="avg" class="value">Memuat…</div>
+  </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import {
-    getFirestore,
-    doc, setDoc, updateDoc, onSnapshot, increment
+    getFirestore, collection, query, where, getDocs
   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  // ==== Firestore ====
+  // Konfig Firestore sama persis dengan comments.html
   const firebaseConfig = {
     apiKey: "AIzaSyDcV_zw1Puhy3hzN3WguRG-sUmW2tnGGUE",
     authDomain: "komentar-91441.firebaseapp.com",
@@ -78,61 +57,56 @@
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
 
-  // ====== PAGE ID ======
+  // ambil pageId (sama logikanya dengan comments.html)
   function getPageId() {
     const url = new URL(window.location.href);
     const q = url.searchParams.get("page");
     if (q) return q.trim().replace(/[^\w-]/g, "_");
-
     if (document.referrer) {
       try {
         const r = new URL(document.referrer);
         return (r.origin + r.pathname).replace(/[^\w-]/g, "_");
       } catch(_) {}
     }
-
     return (url.pathname + url.hash).replace(/[^\w-]/g, "_") || "unknown";
   }
   const pageId = getPageId();
 
-  // ====== LOVE DOC ======
-  const loveBtn     = document.getElementById('loveBtn');
-  const loveIconEl  = document.getElementById('loveIcon');
-  const loveCountEl = document.getElementById('loveCount');
+  const starsEl = document.getElementById('stars');
+  const avgEl   = document.getElementById('avg');
 
-  const loveRef = doc(db, "love", pageId);
-
-  // pastikan dokumen exist
-  async function ensureLoveDoc() {
-    await setDoc(loveRef, { count: 0 }, { merge: true });
+  function stars(n) {
+    return "★".repeat(Math.round(n)) + "☆".repeat(5-Math.round(n));
   }
 
-  // realtime updater
-  onSnapshot(loveRef, (snap) => {
-    if (snap.exists()) {
-      const c = snap.data().count ?? 0;
-      loveCountEl.textContent = c;
-      loveIconEl.textContent  = c > 0 ? "❤" : "♡";
-    } else {
-      loveCountEl.textContent = "0";
-      loveIconEl.textContent  = "♡";
-    }
-  });
-
-  // klik → increment
-  loveBtn.addEventListener("click", async () => {
-    loveBtn.disabled = true;
+  async function loadRating() {
     try {
-      await ensureLoveDoc();
-      await updateDoc(loveRef, { count: increment(1) });
-    } finally {
-      loveBtn.disabled = false;
+      const q1 = query(collection(db,"comments"), where("pageId","==", pageId));
+      const snap = await getDocs(q1);
+
+      let sum = 0, count = 0;
+      snap.forEach(d => {
+        const r = d.data().rating;
+        if (typeof r === "number" && r >=1 && r<=5) {
+          sum += r; count++;
+        }
+      });
+
+      if (count === 0) {
+        starsEl.textContent = "☆☆☆☆☆";
+        avgEl.textContent   = "Belum ada rating";
+      } else {
+        const avg = sum / count;
+        starsEl.textContent = stars(avg);
+        avgEl.textContent   = `${avg.toFixed(1)} / 5 (${count} rating)`;
+      }
+    } catch(err) {
+      console.error(err);
+      avgEl.textContent = "Gagal memuat rating";
     }
-  });
+  }
 
-  // init
-  ensureLoveDoc();
+  loadRating();
 </script>
-
 </body>
 </html>
