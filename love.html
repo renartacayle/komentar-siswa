@@ -2,66 +2,95 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <title>Love Widget Rena</title>
+  <title>Love Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    :root {
+      --card:#fff7cc;
+      --ink:#3a2f00;
+      --muted:#7a6f3a;
+      --line:#ffd633;
+    }
+
+    html,body {
+      margin:0;
+      padding:0;
+      background:#fffef5;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
     body {
-      margin: 0;
-      font-family: system-ui, Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background: #fffdf6;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
     }
+
+    .wrap {
+      text-align:center;
+    }
+
     .love-box {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      border-radius: 999px;
-      border: 1px solid #ffd966;
-      background: #fff7c2;
-      box-shadow: 0 2px 4px rgba(0,0,0,.08);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 16px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:var(--card);
+      box-shadow:0 2px 4px rgba(0,0,0,.08);
     }
+
     .love-btn {
-      border: none;
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 16px;
-      cursor: pointer;
-      background: #ff4b6a;
-      color: white;
+      border:none;
+      border-radius:999px;
+      padding:6px 12px;
+      font-size:16px;
+      cursor:pointer;
+      background:#ff4b6a;
+      color:#fff;
     }
+
     .love-btn:active {
-      transform: scale(0.96);
+      transform:scale(0.96);
     }
+
     .love-count {
-      font-weight: 600;
-      color: #5a3b00;
-      min-width: 24px;
-      text-align: right;
+      font-weight:600;
+      color:var(--ink);
+      min-width:28px;
+      text-align:right;
     }
+
+    .page-label {
+      margin-top:8px;
+      font-size:12px;
+      color:var(--muted);
+      word-break:break-all;
+      max-width:240px;
+    }
+
     .status {
-      font-size: 12px;
-      color: #7a6f3a;
-      margin-top: 4px;
-      text-align: center;
+      margin-top:4px;
+      font-size:12px;
+      color:var(--muted);
+      min-height:1em;
     }
   </style>
 </head>
 <body>
-
-  <div>
+  <div class="wrap">
     <div class="love-box">
       <button id="love-btn" class="love-btn">❤️ Love</button>
       <span id="love-count" class="love-count">0</span>
     </div>
+    <div id="page-label" class="page-label"></div>
     <div id="status" class="status"></div>
   </div>
 
   <script type="module">
-    // ---------- 1. IMPORT FIREBASE ----------
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+    // ========= 1. IMPORT FIREBASE (VERSI 12.x, SAMA KAYAK comments.html) =========
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import {
       getFirestore,
       doc,
@@ -70,10 +99,10 @@
       updateDoc,
       increment,
       onSnapshot
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    // ---------- 2. CONFIG FIREBASE ----------
-    // GANTI DENGAN PUNYA KAMU SENDIRI
+    // ========= 2. KONFIGURASI FIREBASE =========
+    // SALIN DARI comments.html PUNYAMU DAN PASTE DI SINI
     const firebaseConfig = {
       apiKey: "ISI_PUNYAMU",
       authDomain: "ISI_PUNYAMU.firebaseapp.com",
@@ -86,83 +115,82 @@
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
-    // ---------- 3. ID UNIK UNTUK HALAMAN ----------
-    // Bisa kamu ganti manual per embed, atau nanti dibikin dinamis via ?pageId=xxx
-    const PAGE_ID = "halaman-gsite-utama";
+    // ========= 3. TENTUKAN PAGE_ID DARI QUERY ?page=... =========
+    const params = new URLSearchParams(window.location.search);
+    const PAGE_ID = params.get("page") || "unknown";
 
     const loveDocRef = doc(db, "loveCounters", PAGE_ID);
 
-    const loveBtn   = document.getElementById("love-btn");
-    const loveCount = document.getElementById("love-count");
-    const statusEl  = document.getElementById("status");
+    const loveBtn     = document.getElementById("love-btn");
+    const loveCountEl = document.getElementById("love-count");
+    const statusEl    = document.getElementById("status");
+    const pageLabelEl = document.getElementById("page-label");
+
+    pageLabelEl.textContent = "Halaman: " + PAGE_ID;
 
     function setStatus(msg) {
       statusEl.textContent = msg || "";
     }
 
-    // ---------- 4. LOAD AWAL + REALTIME LISTENER ----------
+    // ========= 4. INIT: BACA / BUAT DOKUMEN + LISTENER REALTIME =========
     async function initLove() {
       setStatus("Memuat...");
       try {
         const snap = await getDoc(loveDocRef);
         if (!snap.exists()) {
-          // Sesuai rules: create hanya field { count: int >= 0 }
+          // rules: create hanya field "count" int >= 0
           await setDoc(loveDocRef, { count: 0 });
-          loveCount.textContent = "0";
+          loveCountEl.textContent = "0";
         } else {
           const data = snap.data();
-          loveCount.textContent = (data.count ?? 0).toString();
+          loveCountEl.textContent = (data.count ?? 0).toString();
         }
 
-        // realtime update kalau ada user lain yang klik
+        // realtime listener
         onSnapshot(loveDocRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            loveCount.textContent = (data.count ?? 0).toString();
+            loveCountEl.textContent = (data.count ?? 0).toString();
           }
         });
 
         setStatus("");
       } catch (err) {
         console.error(err);
-        setStatus("Gagal memuat love 😔 (cek rules Firestore)");
+        setStatus("Gagal memuat love (cek rules / config).");
       }
     }
 
-    // ---------- 5. HANDLE KLIK TOMBOL ----------
+    // ========= 5. HANDLE KLIK TOMBOL =========
     loveBtn.addEventListener("click", async () => {
       setStatus("Mengirim love...");
       loveBtn.disabled = true;
 
       try {
-        // Sesuai rules update: cuma boleh ubah count dan harus +1
+        // rules: update hanya boleh ubah count, dan HARUS +1
         await updateDoc(loveDocRef, {
           count: increment(1)
         });
         setStatus("Love terkirim 💕");
       } catch (err) {
-        console.warn("updateDoc gagal, coba create kalau belum ada:", err);
+        console.warn("updateDoc gagal, coba create jika belum ada:", err);
         try {
-          // Kalau dokumen belum ada (race condition), buat dengan count = 1
           const snap = await getDoc(loveDocRef);
           if (!snap.exists()) {
             await setDoc(loveDocRef, { count: 1 });
             setStatus("Love pertama 💕");
           } else {
-            // Kalau dokumen sebenarnya ada tapi tetap gagal, laporkan error
-            setStatus("Gagal mengirim love 😭");
+            setStatus("Gagal mengirim love.");
           }
         } catch (err2) {
           console.error(err2);
-          setStatus("Gagal mengirim love 😭");
+          setStatus("Gagal mengirim love.");
         }
       } finally {
-        // Boleh klik berkali-kali (rules sudah batasi hanya +1 per write)
         loveBtn.disabled = false;
       }
     });
 
-    // mulai
     initLove();
   </script>
 </body>
