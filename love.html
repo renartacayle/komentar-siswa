@@ -15,12 +15,10 @@
     html, body {
       margin:0;
       padding:0;
-      /* transparan biar nyatu sama background Google Sites */
-      background:transparent;
+      background:transparent; /* transparan biar nyatu dengan Google Sites */
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    /* Jangan full-screen flex lagi, cukup konten kecil */
     body {
       display:block;
     }
@@ -84,7 +82,7 @@
   </div>
 
   <script type="module">
-    // ========= 1. IMPORT FIREBASE (SAMAIN VERSI DENGAN comments.html KAMU) =========
+    // ========= 1. IMPORT FIREBASE (samakan VERSI dengan file komentar-mu) =========
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import {
       getFirestore,
@@ -97,21 +95,22 @@
     } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
     // ========= 2. KONFIGURASI FIREBASE =========
-    // SALIN DARI comments.html PUNYAMU DAN PASTE DI SINI
+    // GANTI BAGIAN INI dengan firebaseConfig PUNYAMU YANG SUDAH JALAN
+    // (copy-paste dari file komentar yang sekarang bisa connect Firestore)
     const firebaseConfig = {
-      apiKey: "ISI_PUNYAMU",
-      authDomain: "ISI_PUNYAMU.firebaseapp.com",
-      projectId: "ISI_PUNYAMU",
-      storageBucket: "ISI_PUNYAMU.appspot.com",
-      messagingSenderId: "ISI_PUNYAMU",
-      appId: "ISI_PUNYAMU"
+      apiKey: "API_KEY_PROJECTMU",
+      authDomain: "NAMA-PROJECT.firebaseapp.com",
+      projectId: "NAMA-PROJECT",
+      storageBucket: "NAMA-PROJECT.appspot.com",
+      messagingSenderId: "....",
+      appId: "...."
     };
 
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
-    // ========= 3. TENTUKAN PAGE_ID DARI QUERY ?page=... =========
-    const params = new URLSearchParams(window.location.search);
+    // ========= 3. PAGE_ID dari ?page=... (biar tiap halaman punya love sendiri) =========
+    const params  = new URLSearchParams(window.location.search);
     const PAGE_ID = params.get("page") || "unknown";
 
     const loveDocRef = doc(db, "loveCounters", PAGE_ID);
@@ -124,11 +123,12 @@
       statusEl.textContent = msg || "";
     }
 
-    // ========= 4. INIT: BACA / BUAT DOKUMEN + LISTENER REALTIME =========
+    // ========= 4. INIT: baca / buat dokumen + listener realtime =========
     async function initLove() {
       setStatus("Memuat...");
       try {
         const snap = await getDoc(loveDocRef);
+
         if (!snap.exists()) {
           // rules: create hanya field "count" int >= 0
           await setDoc(loveDocRef, { count: 0 });
@@ -153,12 +153,13 @@
       }
     }
 
-    // ========= 5. HANDLE KLIK TOMBOL =========
+    // ========= 5. HANDLE klik tombol =========
     loveBtn.addEventListener("click", async () => {
       setStatus("Mengirim...");
       loveBtn.disabled = true;
 
       try {
+        // sesuai rules: update hanya ubah count, dan harus +1
         await updateDoc(loveDocRef, {
           count: increment(1)
         });
