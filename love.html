@@ -1,17 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Love Button</title>
+<style>
+  body {
+    font-family: system-ui, Arial, sans-serif;
+    margin:0; padding:6px;
+    text-align:center;
+    background:#fffef5;
+    color:#3a2f00;
+  }
+
+  .love-btn {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid #ff99bb;
+    background:#ffe6f0;
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:14px;
+    cursor:pointer;
+    box-shadow:0 2px 4px rgba(0,0,0,.06);
+    transition:.15s;
+  }
+
+  .love-btn:hover {
+    transform:translateY(-1px);
+    box-shadow:0 3px 8px rgba(0,0,0,.1);
+  }
+
+  .love-btn:active {
+    transform:translateY(0);
+    box-shadow:0 1px 3px rgba(0,0,0,.08);
+  }
+
+  .love-btn[disabled] {
+    opacity:.6;
+    cursor:wait;
+  }
+
+  .love-icon {
+    font-size:18px;
+  }
+
+  .love-count {
+    font-weight:600;
+  }
+</style>
+</head>
+<body>
+
+<button id="loveBtn" class="love-btn">
+  <span id="loveIcon" class="love-icon">♡</span>
+  <span id="loveCount" class="love-count">0</span>
+  <span>love</span>
+</button>
+
 <script type="module">
-  // ========= 1. IMPORT FIREBASE =========
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import {
-    initializeFirestore,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    increment,
-    onSnapshot
+    getFirestore,
+    doc, setDoc, updateDoc, onSnapshot, increment
   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  // ========= 2. KONFIGURASI FIREBASE (punyamu) =========
+  // ==== Firestore ====
   const firebaseConfig = {
     apiKey: "AIzaSyDcV_zw1Puhy3hzN3WguRG-sUmW2tnGGUE",
     authDomain: "komentar-91441.firebaseapp.com",
@@ -20,93 +75,64 @@
     messagingSenderId: "728735814182",
     appId: "1:728735814182:web:137dd7587f8966d1320ce7",
   };
-
   const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
 
-  // 🔥 INI BAGIAN PENTING: paksa long polling biar nggak dikira offline
-  const db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-    useFetchStreams: false,
+  // ====== PAGE ID ======
+  function getPageId() {
+    const url = new URL(window.location.href);
+    const q = url.searchParams.get("page");
+    if (q) return q.trim().replace(/[^\w-]/g, "_");
+
+    if (document.referrer) {
+      try {
+        const r = new URL(document.referrer);
+        return (r.origin + r.pathname).replace(/[^\w-]/g, "_");
+      } catch(_) {}
+    }
+
+    return (url.pathname + url.hash).replace(/[^\w-]/g, "_") || "unknown";
+  }
+  const pageId = getPageId();
+
+  // ====== LOVE DOC ======
+  const loveBtn     = document.getElementById('loveBtn');
+  const loveIconEl  = document.getElementById('loveIcon');
+  const loveCountEl = document.getElementById('loveCount');
+
+  const loveRef = doc(db, "love", pageId);
+
+  // pastikan dokumen exist
+  async function ensureLoveDoc() {
+    await setDoc(loveRef, { count: 0 }, { merge: true });
+  }
+
+  // realtime updater
+  onSnapshot(loveRef, (snap) => {
+    if (snap.exists()) {
+      const c = snap.data().count ?? 0;
+      loveCountEl.textContent = c;
+      loveIconEl.textContent  = c > 0 ? "❤" : "♡";
+    } else {
+      loveCountEl.textContent = "0";
+      loveIconEl.textContent  = "♡";
+    }
   });
 
-  // ========= 3. PAGE_ID dari ?page=... =========
-  const params  = new URLSearchParams(window.location.search);
-  const PAGE_ID = params.get("page") || "unknown";
-
-  const loveDocRef = doc(db, "loveCounters", PAGE_ID);
-
-  const loveBtn     = document.getElementById("love-btn");
-  const loveCountEl = document.getElementById("love-count");
-  const statusEl    = document.getElementById("status");
-
-  function setStatus(msg) {
-    statusEl.textContent = msg || "";
-  }
-
-  // ========= 4. INIT: BACA / BUAT DOKUMEN + LISTENER REALTIME =========
-  async function initLove() {
-    setStatus("Memuat...");
-    try {
-      const snap = await getDoc(loveDocRef);
-
-      if (!snap.exists()) {
-        await setDoc(loveDocRef, { count: 0 });
-        loveCountEl.textContent = "0";
-      } else {
-        const data = snap.data();
-        loveCountEl.textContent = (data.count ?? 0).toString();
-      }
-
-      // realtime listener (kalau konek)
-      onSnapshot(loveDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          loveCountEl.textContent = (data.count ?? 0).toString();
-        }
-      });
-
-      setStatus(""); // clear "Memuat..."
-    } catch (err) {
-      console.error("initLove error:", err);
-
-      if (err.code === "unavailable" || err.message?.includes("client is offline")) {
-        loveCountEl.textContent = "0";
-        setStatus("Offline mode");
-      } else {
-        setStatus("Gagal memuat (" + (err.code || "cek console") + ")");
-      }
-    }
-  }
-
-  // ========= 5. HANDLE klik tombol =========
+  // klik → increment
   loveBtn.addEventListener("click", async () => {
-    setStatus("Mengirim...");
     loveBtn.disabled = true;
-
     try {
-      await updateDoc(loveDocRef, {
-        count: increment(1)
-      });
-      setStatus("❤️ OK");
-    } catch (err) {
-      console.warn("updateDoc gagal:", err);
-      try {
-        const snap = await getDoc(loveDocRef);
-        if (!snap.exists()) {
-          await setDoc(loveDocRef, { count: 1 });
-          loveCountEl.textContent = "1";
-          setStatus("❤️ pertama");
-        } else {
-          setStatus("Gagal kirim (" + (err.code || "err") + ")");
-        }
-      } catch (err2) {
-        console.error("setDoc fallback error:", err2);
-        setStatus("Error total");
-      }
+      await ensureLoveDoc();
+      await updateDoc(loveRef, { count: increment(1) });
     } finally {
       loveBtn.disabled = false;
     }
   });
 
-  initLove();
+  // init
+  ensureLoveDoc();
 </script>
+
+</body>
+</html>
