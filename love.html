@@ -2,7 +2,7 @@
   // ========= 1. IMPORT FIREBASE =========
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import {
-    getFirestore,
+    initializeFirestore,
     doc,
     getDoc,
     setDoc,
@@ -11,7 +11,7 @@
     onSnapshot
   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  // ========= 2. KONFIGURASI FIREBASE (pakai punyamu yang sudah jalan) =========
+  // ========= 2. KONFIGURASI FIREBASE (punyamu) =========
   const firebaseConfig = {
     apiKey: "AIzaSyDcV_zw1Puhy3hzN3WguRG-sUmW2tnGGUE",
     authDomain: "komentar-91441.firebaseapp.com",
@@ -22,7 +22,12 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+
+  // 🔥 INI BAGIAN PENTING: paksa long polling biar nggak dikira offline
+  const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+    useFetchStreams: false,
+  });
 
   // ========= 3. PAGE_ID dari ?page=... =========
   const params  = new URLSearchParams(window.location.search);
@@ -64,12 +69,9 @@
     } catch (err) {
       console.error("initLove error:", err);
 
-      // ==== HANDLE KHUSUS KETIKA DIANGGAP OFFLINE ====
-      // offline: gagal getDoc, tapi kita tetap set UI ke 0
       if (err.code === "unavailable" || err.message?.includes("client is offline")) {
         loveCountEl.textContent = "0";
         setStatus("Offline mode");
-        // tidak throw lagi, biar widget tetap bisa dipakai
       } else {
         setStatus("Gagal memuat (" + (err.code || "cek console") + ")");
       }
